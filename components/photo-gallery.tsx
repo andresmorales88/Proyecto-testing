@@ -44,7 +44,7 @@ const categories = [
   { value: "other", label: "Otro" },
 ]
 
-export function PhotoGallery({ userId }: { userId: string }) {
+export function PhotoGallery() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -65,7 +65,6 @@ export function PhotoGallery({ userId }: { userId: string }) {
     let query = supabase
       .from("progress_photos")
       .select("*")
-      .eq("user_id", userId)
       .order("photo_date", { ascending: false })
 
     if (filterCategory !== "all") {
@@ -121,24 +120,11 @@ export function PhotoGallery({ userId }: { userId: string }) {
     setUploading(true)
     const supabase = createClient()
 
-    // Verify auth session first
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      console.log("[v0] Auth error during upload:", authError?.message)
-      toast.error("Error de autenticacion. Recarga la pagina e intenta de nuevo.")
-      setUploading(false)
-      return
-    }
-
-    console.log("[v0] Starting upload for user:", user.id, "files:", pendingFiles.length)
-
     let successCount = 0
 
     for (const file of pendingFiles) {
       const fileExt = file.name.split(".").pop()
-      const filePath = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
-
-      console.log("[v0] Uploading to storage:", filePath)
+      const filePath = `photos/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from("progress-photos")
@@ -148,23 +134,17 @@ export function PhotoGallery({ userId }: { userId: string }) {
         })
 
       if (uploadError) {
-        console.log("[v0] Storage upload error:", uploadError.message)
         toast.error("Error subiendo foto: " + uploadError.message)
         continue
       }
-
-      console.log("[v0] Storage upload success:", uploadData?.path)
 
       const {
         data: { publicUrl },
       } = supabase.storage.from("progress-photos").getPublicUrl(filePath)
 
-      console.log("[v0] Public URL:", publicUrl)
-
       const { error: dbError } = await supabase
         .from("progress_photos")
         .insert({
-          user_id: userId,
           photo_url: publicUrl,
           photo_date: uploadDate,
           category: uploadCategory,
@@ -172,10 +152,8 @@ export function PhotoGallery({ userId }: { userId: string }) {
         })
 
       if (dbError) {
-        console.log("[v0] DB insert error:", dbError.message, dbError.details, dbError.hint)
         toast.error("Error guardando registro: " + dbError.message)
       } else {
-        console.log("[v0] DB insert success for:", filePath)
         successCount++
       }
     }

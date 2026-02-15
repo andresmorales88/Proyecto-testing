@@ -65,7 +65,7 @@ function CustomTooltip({
   )
 }
 
-export function FitnessCharts({ userId }: { userId: string }) {
+export function FitnessCharts() {
   const [data, setData] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -77,7 +77,6 @@ export function FitnessCharts({ userId }: { userId: string }) {
         .select(
           "entry_date,weight,body_fat_pct,muscle_mass,sleep_score,steps,kcal_burned,stress_avg,vfc_7d,body_battery_am"
         )
-        .eq("user_id", userId)
         .order("entry_date", { ascending: true })
         .limit(90)
 
@@ -85,7 +84,7 @@ export function FitnessCharts({ userId }: { userId: string }) {
       setLoading(false)
     }
     load()
-  }, [userId])
+  }, [])
 
   if (loading) {
     return (

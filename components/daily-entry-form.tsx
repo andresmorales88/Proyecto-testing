@@ -82,7 +82,7 @@ const emptyEntry: DailyEntry = {
 
 const principleStatusOptions = ["Cumplido", "Parcial", "OK", "No cumplido"]
 
-export function DailyEntryForm({ userId }: { userId: string }) {
+export function DailyEntryForm() {
   const [entry, setEntry] = useState<DailyEntry>(emptyEntry)
   const [isLoading, setIsLoading] = useState(false)
   const [isExisting, setIsExisting] = useState(false)
@@ -97,7 +97,6 @@ export function DailyEntryForm({ userId }: { userId: string }) {
     const { data } = await supabase
       .from("daily_entries")
       .select("*")
-      .eq("user_id", userId)
       .eq("entry_date", date)
       .single()
 
@@ -115,7 +114,6 @@ export function DailyEntryForm({ userId }: { userId: string }) {
     const supabase = createClient()
 
     const payload = {
-      user_id: userId,
       entry_date: entry.entry_date,
       sleep_score: entry.sleep_score,
       sleep_hours: entry.sleep_hours || null,
