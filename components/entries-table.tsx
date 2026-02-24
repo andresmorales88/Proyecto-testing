@@ -13,7 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trash2, Download } from "lucide-react"
+import { Trash2, Download, DatabaseBackup } from "lucide-react"
 import { toast } from "sonner"
 
 interface Entry {
@@ -116,6 +116,7 @@ function downloadExcel(entries: Entry[]) {
 export function EntriesTable() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
+  const [seeding, setSeeding] = useState(false)
 
   const loadEntries = useCallback(async () => {
     const supabase = createClient()
@@ -132,6 +133,25 @@ export function EntriesTable() {
   useEffect(() => {
     loadEntries()
   }, [loadEntries])
+
+  const handleSeed = async () => {
+    setSeeding(true)
+    try {
+      const res = await fetch("/api/seed")
+      const data = await res.json()
+      if (data.inserted > 0) {
+        toast.success(`Se cargaron ${data.inserted} registros historicos`)
+        loadEntries()
+      } else if (data.errors?.length > 0) {
+        toast.error("Error cargando datos: " + data.errors[0])
+      } else {
+        toast.info("No se encontraron registros nuevos para cargar")
+      }
+    } catch {
+      toast.error("Error ejecutando el seed")
+    }
+    setSeeding(false)
+  }
 
   const handleDelete = async (id: string) => {
     const supabase = createClient()
@@ -157,28 +177,41 @@ export function EntriesTable() {
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-4 py-12 text-muted-foreground">
         <p>No hay registros aun.</p>
-        <p className="text-sm">Comienza agregando tu primer registro diario.</p>
+        <p className="text-sm">Comienza agregando tu primer registro diario o carga los datos historicos.</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={handleSeed}
+          disabled={seeding}
+        >
+          <DatabaseBackup className="h-4 w-4" />
+          {seeding ? "Cargando datos..." : "Cargar datos historicos"}
+        </Button>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between px-4 pt-3">
+      <div className="flex items-center justify-between gap-2 px-4 pt-3">
         <span className="text-sm text-muted-foreground">
           {entries.length} registros
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => downloadExcel(entries)}
-        >
-          <Download className="h-4 w-4" />
-          Descargar Excel
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => downloadExcel(entries)}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Descargar Excel</span>
+            <span className="sm:hidden">Excel</span>
+          </Button>
+        </div>
       </div>
       <ScrollArea className="w-full">
         <div className="min-w-[1200px]">
